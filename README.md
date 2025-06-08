@@ -6,7 +6,7 @@ A foundational Unity project for a First-Person Shooter (FPS) controller. This r
 
 This project is a great learning tool or a solid base for a more complex character controller.
 
-✨ Current Features
+# ✨ Current Features
 
 Basic Movement: Physics-based walking and strafing using Rigidbody.
 
@@ -24,13 +24,13 @@ Unity's New Input System: All controls are managed through an .inputactions asse
 
 Universal Render Pipeline (URP): The project is set up with URP for modern, scalable graphics.
 
-🚧 To-Do / Known Limitations
+# 🚧 To-Do / Known Limitations
 
 The primary goal of this repository is to provide a base. The most notable missing feature is:
 
 Slope Handling: The controller does not handle slopes correctly. The player will slide down steep surfaces and may have difficulty walking up even gentle ones without losing speed. Implementing proper slope detection and adjustment is the top priority for future development.
 
-🚀 Getting Started
+# 🚀 Getting Started
 Prerequisites
 
 Unity Editor: This project was created with Unity 6000.0.42f1. You will need this version or a newer one to open it without issues.
@@ -52,7 +52,7 @@ Once the project is open, navigate to the Assets/Scenes/ folder and open the Gam
 
 Press Play to test the controller.
 
-📂 Project Structure
+# 📂 Project Structure
 
 The project is organized into logical folders within the Assets directory:
 
@@ -73,7 +73,7 @@ content_copy
 download
 Use code with caution.
 IGNORE_WHEN_COPYING_END
-📦 Dependencies
+# 📦 Dependencies
 
 This project relies on the following key Unity packages, which should be installed automatically:
 
