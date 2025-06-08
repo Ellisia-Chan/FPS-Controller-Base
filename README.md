@@ -1,6 +1,4 @@
-Of course! Here is a well-structured README.md file for your GitHub repository, based on the file structure and code you provided. It explains the project's current state, its features, and its limitations, and gives other developers a clear guide on how to use it.
-
-Unity FPS Controller Base
+# Unity FPS Controller Base
 
 ![alt text](https://img.shields.io/badge/Made%20with-Unity-57b9d3.svg?style=for-the-badge&logo=unity)
 
