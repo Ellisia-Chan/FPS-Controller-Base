@@ -1,11 +1,14 @@
-using EventSystem;
-using EventSystem.Events;
-using InputSystem;
 using System;
 using System.Collections;
 using UnityEngine;
+using InputSystem;
+using EventSystem;
+using EventSystem.Events;
+using PlayerSystem.StateMachine;
 
 namespace PlayerSystem {
+    [RequireComponent(typeof(PlayerStateMachine))]
+    [RequireComponent(typeof(Rigidbody))]
     public class PlayerMovement : MonoBehaviour {
 
         // Events
@@ -48,12 +51,7 @@ namespace PlayerSystem {
         private Rigidbody rb;
 
         // States
-        public MovementState moveState;
-        public enum MovementState {
-            walking,
-            sprinting,
-            air
-        }
+        private PlayerStateMachine stateMachine;
 
         // Lifecycle
         private void Awake() {
@@ -73,25 +71,17 @@ namespace PlayerSystem {
         private void Start() {
             rb = GetComponent<Rigidbody>();
             rb.freezeRotation = true;
+
+            stateMachine = GetComponent<PlayerStateMachine>();
+
             canJump = true;
         }
 
         private void Update() {
-            StateHandler();
             MoveInput();
             GroundCheck();
-
-            Debug.Log(moveState);
         }
 
-        private void FixedUpdate() {
-            HandleMovement();
-            SpeedControl();
-
-            if (isJumpHeld) {
-                HandleJump();
-            }
-        }
 
         private void OnDisable() {
             EventBus.Unsubscribe(jumpAction);
@@ -104,9 +94,23 @@ namespace PlayerSystem {
 
         }
 
+        // ---------------------------------- Physics Methods ----------------------------------
+
+        /// <summary>
+        /// Handles physics for the player
+        /// This is called from the PlayerStateMachine to handle physics instead of the FixedUpdate loop monobehaviour
+        /// </summary>
+        public void ProcessMovementPhysics() {
+           HandleMovement();
+           SpeedControl();
+
+            if (isJumpHeld) {
+                HandleJump();
+            }
+        }
 
 
-        // Methods
+        // ---------------------------------- Movement Methods ----------------------------------
 
         /// <summary>
         /// Handles movement input for the player
@@ -121,7 +125,7 @@ namespace PlayerSystem {
         /// <summary>
         /// Handles movement of the player
         /// </summary>
-        private void HandleMovement() {
+        public void HandleMovement() {
             moveDir = orientation.forward * verticalInput + orientation.right * horizontalInput;
 
             if (isGrounded) {
@@ -138,7 +142,7 @@ namespace PlayerSystem {
         /// <summary>
         /// Controls the speed of the player
         /// </summary>
-        private void SpeedControl() {
+        public void SpeedControl() {
             Vector3 flatVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
 
             if (flatVel.magnitude > moveSpeed) {
@@ -149,17 +153,20 @@ namespace PlayerSystem {
 
 
         /// <summary>
-        /// Checks if the player is on the ground
+        /// Handles the bool sprinting of the player 
         /// </summary>
-        private void GroundCheck() {
-            isGrounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.1f, groundMask);
+        /// <param name="isSprinting"></param>
+        private void HandleSprint(bool isSprinting) {
+            this.isSprinting = isSprinting;
         }
 
+
+        // ---------------------------------- Jumping Methods ----------------------------------
 
         /// <summary>
         /// Handles the jumping of the player
         /// </summary>
-        private void HandleJump() {
+        public void HandleJump() {
             if (isGrounded && canJump) {
                 rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
                 rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
@@ -188,69 +195,26 @@ namespace PlayerSystem {
             isJumpHeld = canJump;
         }
 
+        /// <summary>
+        /// Checks if the player is on the ground
+        /// </summary>
+        private void GroundCheck() {
+            isGrounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.1f, groundMask);
+        }
+
+        // ---------------------------------- Getters & Setters ----------------------------------
 
         /// <summary>
-        /// Resets the bool jumping of the player
+        /// Sets the movement speed
         /// </summary>
-        private void ResetJump() {
-            canJump = true;
+        /// <param name="speed"></param>
+        public void SetMoveSpeed(float speed) {
+            moveSpeed = speed;
         }
 
-
-        /// <summary>
-        /// Handles the bool sprinting of the player 
-        /// </summary>
-        /// <param name="isSprinting"></param>
-        private void HandleSprint(bool isSprinting) {
-            this.isSprinting = isSprinting;
-        }
-
-
-        /// <summary>
-        /// Handles the state of the player movement
-        /// </summary>
-        private void StateHandler() {
-            if (isGrounded && isSprinting) {
-                SetState(MovementState.sprinting);
-            }
-            else if (isGrounded && !isSprinting) {
-                SetState(MovementState.walking);
-            }
-            else {
-                SetState(MovementState.air);
-            }
-        }
-
-
-        /// <summary>
-        /// Sets the state of the player movement
-        /// </summary>
-        /// <param name="newState"></param>
-        private void SetState(MovementState newState) {
-            if (moveState == newState) return;
-
-            moveState = newState;
-
-            switch (moveState) {
-                case MovementState.walking:
-                    moveSpeed = walkSpeed;
-                    break;
-                case MovementState.sprinting:
-                    moveSpeed = sprintSpeed;
-                    break;
-                case MovementState.air:
-                    moveSpeed = walkSpeed;
-                    break;
-                default:
-                    moveSpeed = walkSpeed;
-                    break;
-            }
-        }
-
-
-        private void OnDrawGizmos() {
-            Gizmos.color = Color.red;
-            Gizmos.DrawRay(transform.position, Vector3.down * playerHeight * 0.5f);
-        }
+        public bool IsGrounded() => isGrounded;
+        public bool IsSprinting() => isSprinting;
+        public float GetWalkSpeed() => walkSpeed;
+        public float GetSprintSpeed() => sprintSpeed;
     }
 }
