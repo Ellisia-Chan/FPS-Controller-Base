@@ -7,8 +7,6 @@ namespace InputSystem {
     public class InputManager : MonoBehaviour {
         public static InputManager Instance { get; private set; }
 
-        private Action<UnityEngine.InputSystem.InputAction.CallbackContext> onJumpAction, onJumpActionCancel, onSprintAction, onSprintCancelAction;
-
         private InputSystem_Actions inputActions;
 
         // Lifecycle
@@ -22,36 +20,40 @@ namespace InputSystem {
 
             Instance = this;
             inputActions = new InputSystem_Actions();
-
-            onJumpAction = e => EventBus.Publish(new Evt_PlayerJumpAction());
-            onJumpActionCancel = e => EventBus.Publish(new Evt_PlayerJumpCancel());
-            onSprintAction = e => EventBus.Publish(new Evt_PlayerSprintAction());
-            onSprintCancelAction = e => EventBus.Publish(new Evt_PlayerSprintCancel());
         }
 
         private void OnEnable() {
             inputActions.Enable();
 
             // Jump Actions
-            inputActions.Player.Jump.performed += onJumpAction;
-            inputActions.Player.Jump.canceled += onJumpActionCancel;
+            inputActions.Player.Jump.performed += OnJumpAction;
+            inputActions.Player.Jump.canceled += OnJumpActionCancel;
 
             // Sprint Actions
-            inputActions.Player.Sprint.performed += onSprintAction;
-            inputActions.Player.Sprint.canceled += onSprintCancelAction;
+            inputActions.Player.Sprint.performed += OnSprintAction;
+            inputActions.Player.Sprint.canceled += OnSprintCancelAction;
         }
 
         private void OnDisable() {
             inputActions.Disable();
 
             // Jump Actions
-            inputActions.Player.Jump.performed -= onJumpAction;
-            inputActions.Player.Jump.canceled -= onJumpActionCancel;
+            inputActions.Player.Jump.performed -= OnJumpAction;
+            inputActions.Player.Jump.canceled -= OnJumpActionCancel;
 
             // Sprint Actions
-            inputActions.Player.Sprint.performed -= onSprintAction;
-            inputActions.Player.Sprint.canceled -= onSprintCancelAction;
+            inputActions.Player.Sprint.performed -= OnSprintAction;
+            inputActions.Player.Sprint.canceled -= OnSprintCancelAction;
         }
+
+        // Event Methods
+        private void OnJumpAction(UnityEngine.InputSystem.InputAction.CallbackContext context) => EventBus.Publish(new Evt_PlayerJumpAction());
+
+        private void OnJumpActionCancel(UnityEngine.InputSystem.InputAction.CallbackContext context) => EventBus.Publish(new Evt_PlayerJumpCancel());
+
+        private void OnSprintAction(UnityEngine.InputSystem.InputAction.CallbackContext context) => EventBus.Publish(new Evt_PlayerSprintAction());
+
+        private void OnSprintCancelAction(UnityEngine.InputSystem.InputAction.CallbackContext context) => EventBus.Publish(new Evt_PlayerSprintCancel());
 
 
         // Methods

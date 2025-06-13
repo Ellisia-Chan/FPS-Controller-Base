@@ -8,12 +8,6 @@ using UnityEngine;
 namespace PlayerSystem {
     public class PlayerMovement : MonoBehaviour {
 
-        // Events
-        private Action<Evt_PlayerJumpAction> jumpAction;
-        private Action<Evt_PlayerJumpCancel> jumpActionCancel;
-        private Action<Evt_PlayerSprintAction> sprintAction;
-        private Action<Evt_PlayerSprintCancel> sprintCancelAction;
-
         [Header("Movement")]
         [SerializeField] private float walkSpeed;
         [SerializeField] private float sprintSpeed;
@@ -56,18 +50,11 @@ namespace PlayerSystem {
         }
 
         // Lifecycle
-        private void Awake() {
-            jumpAction = e => SetJumpHeld(true);
-            jumpActionCancel = e => SetJumpHeld(false);
-            sprintAction = e => HandleSprint(true);
-            sprintCancelAction = e => HandleSprint(false);
-        }
-
         private void OnEnable() {
-            EventBus.Subscribe(jumpAction);
-            EventBus.Subscribe(jumpActionCancel);
-            EventBus.Subscribe(sprintAction);
-            EventBus.Subscribe(sprintCancelAction);
+            EventBus.Subscribe<Evt_PlayerJumpAction>(JumpActionEvent);
+            EventBus.Subscribe<Evt_PlayerJumpCancel>(JumpCancelActionEvent);
+            EventBus.Subscribe<Evt_PlayerSprintAction>(SprintActionEvent);
+            EventBus.Subscribe<Evt_PlayerSprintCancel>(SprintCancelActionEvent);
         }
 
         private void Start() {
@@ -81,7 +68,6 @@ namespace PlayerSystem {
             MoveInput();
             GroundCheck();
 
-            Debug.Log(moveState);
         }
 
         private void FixedUpdate() {
@@ -94,15 +80,22 @@ namespace PlayerSystem {
         }
 
         private void OnDisable() {
-            EventBus.Unsubscribe(jumpAction);
-            EventBus.Unsubscribe(jumpActionCancel);
-            EventBus.Unsubscribe(sprintAction);
-            EventBus.Unsubscribe(sprintCancelAction);
+            EventBus.Unsubscribe<Evt_PlayerJumpAction>(JumpActionEvent);
+            EventBus.Unsubscribe<Evt_PlayerJumpCancel>(JumpCancelActionEvent);
+            EventBus.Unsubscribe<Evt_PlayerSprintAction>(SprintActionEvent);
+            EventBus.Unsubscribe<Evt_PlayerSprintCancel>(SprintCancelActionEvent);
         }
 
         private void OnDestroy() {
 
         }
+
+        // Event Methods
+        private void JumpActionEvent(Evt_PlayerJumpAction e) { SetJumpHeld(true); }
+        private void JumpCancelActionEvent(Evt_PlayerJumpCancel e) { SetJumpHeld(false); }
+
+        private void SprintActionEvent(Evt_PlayerSprintAction e) { HandleSprint(true);  }
+        private void SprintCancelActionEvent(Evt_PlayerSprintCancel e) { HandleSprint(false); }
 
 
 
@@ -184,9 +177,7 @@ namespace PlayerSystem {
         /// Handles the bool jumping of the player
         /// </summary>
         /// <param name="canJump"></param>
-        private void SetJumpHeld(bool canJump) {
-            isJumpHeld = canJump;
-        }
+        private void SetJumpHeld(bool canJump) => isJumpHeld = canJump;
 
 
         /// <summary>
