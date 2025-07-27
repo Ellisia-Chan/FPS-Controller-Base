@@ -33,7 +33,10 @@ namespace PlayerSystem {
 
         private bool isGrounded;
 
-        //[Header("Slope Handling")]
+        [Header("Slope Handling")]
+        [SerializeField] private float maxSlopeAngle;
+        private RaycastHit slopeHit;
+        private bool exitingSlope;
 
 
         [Header("Forward Direction")]
@@ -117,14 +120,26 @@ namespace PlayerSystem {
         private void HandleMovement() {
             moveDir = orientation.forward * verticalInput + orientation.right * horizontalInput;
 
-            if (isGrounded) {
-                rb.AddForce(moveDir.normalized * moveSpeed * 10f, ForceMode.Force);
-                rb.linearDamping = groundDrag;
+            // When on a slope
+            if (OnSlope() && !exitingSlope)
+            {
+                rb.AddForce(GetSlopeMoveDirection() * moveSpeed * 20f, ForceMode.Force);
+
+                // Prevents weird bouncing when going up slopes
+                if (rb.linearVelocity.y > 0)
+                    rb.AddForce(Vector3.down * 80f, ForceMode.Force);
             }
+            // When on flat ground
+            else if (isGrounded) {
+                rb.AddForce(moveDir.normalized * moveSpeed * 10f, ForceMode.Force);
+            }
+            // When in the air
             else {
                 rb.AddForce(moveDir.normalized * moveSpeed * 10f * airMultiplier, ForceMode.Force);
-                rb.linearDamping = 0f;
             }
+            
+            // We handle gravity manually on slopes
+            rb.useGravity = !OnSlope();
         }
 
 
@@ -132,20 +147,39 @@ namespace PlayerSystem {
         /// Controls the speed of the player
         /// </summary>
         private void SpeedControl() {
-            Vector3 flatVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+            // Limiting speed on slope
+            if (OnSlope() && !exitingSlope)
+            {
+                if (rb.linearVelocity.magnitude > moveSpeed)
+                    rb.linearVelocity = rb.linearVelocity.normalized * moveSpeed;
+            }
+            // Limiting speed on ground or in air
+            else
+            {
+                Vector3 flatVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
 
-            if (flatVel.magnitude > moveSpeed) {
-                Vector3 limitedVel = flatVel.normalized * moveSpeed;
-                rb.linearVelocity = new Vector3(limitedVel.x, rb.linearVelocity.y, limitedVel.z);
+                if (flatVel.magnitude > moveSpeed) {
+                    Vector3 limitedVel = flatVel.normalized * moveSpeed;
+                    rb.linearVelocity = new Vector3(limitedVel.x, rb.linearVelocity.y, limitedVel.z);
+                }
             }
         }
 
 
         /// <summary>
-        /// Checks if the player is on the ground
+        /// Checks if the player is on the ground and gets slope information
         /// </summary>
         private void GroundCheck() {
-            isGrounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.1f, groundMask);
+            isGrounded = Physics.Raycast(transform.position, Vector3.down, out slopeHit, playerHeight * 0.5f + 0.2f, groundMask);
+
+            if (isGrounded)
+            {
+                rb.linearDamping = groundDrag;
+            }
+            else
+            {
+                rb.linearDamping = 0f;
+            }
         }
 
 
@@ -154,6 +188,8 @@ namespace PlayerSystem {
         /// </summary>
         private void HandleJump() {
             if (isGrounded && canJump) {
+                exitingSlope = true;
+
                 rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
                 rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
                 canJump = false;
@@ -170,6 +206,7 @@ namespace PlayerSystem {
         private IEnumerator JumpCooldownTimer() {
             yield return new WaitForSeconds(jumpCooldown);
             canJump = true;
+            exitingSlope = false;
         }
 
 
@@ -201,12 +238,18 @@ namespace PlayerSystem {
         /// Handles the state of the player movement
         /// </summary>
         private void StateHandler() {
-            if (isGrounded && isSprinting) {
+            // Mode - Sprinting
+            if (isGrounded && isSprinting && OnSlope() && !exitingSlope) {
                 SetState(MovementState.sprinting);
             }
-            else if (isGrounded && !isSprinting) {
+            else if (isGrounded && isSprinting) {
+                SetState(MovementState.sprinting);
+            }
+            // Mode - Walking
+            else if (isGrounded) {
                 SetState(MovementState.walking);
             }
+            // Mode - Air
             else {
                 SetState(MovementState.air);
             }
@@ -230,18 +273,42 @@ namespace PlayerSystem {
                     moveSpeed = sprintSpeed;
                     break;
                 case MovementState.air:
-                    moveSpeed = walkSpeed;
+                    // In air, you might want to keep sprint speed if you were sprinting
+                    moveSpeed = isSprinting ? sprintSpeed : walkSpeed;
                     break;
                 default:
                     moveSpeed = walkSpeed;
                     break;
+
             }
+        }
+
+        /// <summary>
+        /// Checks if the player is on a walkable slope.
+        /// </summary>
+        private bool OnSlope()
+        {
+            if(isGrounded)
+            {
+                float angle = Vector3.Angle(Vector3.up, slopeHit.normal);
+                return angle < maxSlopeAngle && angle != 0;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the direction of movement projected onto the slope.
+        /// </summary>
+        private Vector3 GetSlopeMoveDirection()
+        {
+            return Vector3.ProjectOnPlane(moveDir, slopeHit.normal).normalized;
         }
 
 
         private void OnDrawGizmos() {
             Gizmos.color = Color.red;
-            Gizmos.DrawRay(transform.position, Vector3.down * playerHeight * 0.5f);
+            Gizmos.DrawRay(transform.position, Vector3.down * (playerHeight * 0.5f + 0.2f));
         }
     }
 }
