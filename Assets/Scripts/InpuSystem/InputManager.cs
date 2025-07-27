@@ -32,6 +32,9 @@ namespace InputSystem {
             // Sprint Actions
             inputActions.Player.Sprint.performed += OnSprintAction;
             inputActions.Player.Sprint.canceled += OnSprintCancelAction;
+
+            // Interact Actions
+            inputActions.Player.Interact.performed += OnInteractAction;
         }
 
         private void OnDisable() {
@@ -44,6 +47,9 @@ namespace InputSystem {
             // Sprint Actions
             inputActions.Player.Sprint.performed -= OnSprintAction;
             inputActions.Player.Sprint.canceled -= OnSprintCancelAction;
+
+            // Interact Actions
+            inputActions.Player.Interact.performed -= OnInteractAction;
         }
 
         // Event Methods
@@ -54,6 +60,8 @@ namespace InputSystem {
         private void OnSprintAction(UnityEngine.InputSystem.InputAction.CallbackContext context) => EventBus.Publish(new Evt_PlayerSprintAction());
 
         private void OnSprintCancelAction(UnityEngine.InputSystem.InputAction.CallbackContext context) => EventBus.Publish(new Evt_PlayerSprintCancel());
+
+        private void OnInteractAction(UnityEngine.InputSystem.InputAction.CallbackContext context) => EventBus.Publish(new Evt_PlayerInteractAction());
 
 
         // Methods
